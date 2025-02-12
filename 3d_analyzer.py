@@ -3,10 +3,16 @@ import trimesh
 import numpy as np
 import stable_baselines3 as sb3
 from stable_baselines3 import PPO
-import open3d as o3d
 import pyvista as pv
 import gym
 from gym import spaces
+import os
+
+# Check for missing dependencies
+try:
+    import open3d as o3d
+except OSError:
+    st.warning("Open3D could not be loaded. Ensure 'libGL.so.1' is installed.")
 
 def load_model(file):
     try:
@@ -63,6 +69,10 @@ def apply_rl_optimization(model, metadata):
     return dict(zip(metadata.keys(), optimized_metadata))
 
 def visualize_model(model):
+    if not hasattr(model, 'vertices') or not hasattr(model, 'faces'):
+        st.warning("Model visualization is not available.")
+        return
+    
     plotter = pv.Plotter()
     vertices = np.array(model.vertices)
     faces = np.hstack([[len(f)] + list(f) for f in model.faces])
