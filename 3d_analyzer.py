@@ -139,14 +139,80 @@ def analyze_topology(mesh):
     except:
         degenerate_count = 0
     
+    # Check for T-junctions
+    try:
+        t_junctions = find_t_junctions(mesh)
+        if t_junctions:
+            suggestions.append(f'Found {len(t_junctions)} T-junctions. Consider welding vertices.')
+    except:
+        t_junctions = []
+    
     return {
         'vertex_count': vertex_count,
         'face_count': face_count,
         'is_watertight': mesh.is_watertight if hasattr(mesh, 'is_watertight') else False,
         'density': density,
         'part_count': part_count,
+        't_junctions': t_junctions,  # Add T-junctions to the results
         'suggestions': suggestions
     }
+
+def find_t_junctions(mesh):
+    """Detect T-junctions in the mesh"""
+    t_junctions = []
+    
+    # Get all vertices and edges
+    vertices = mesh.vertices
+    edges = mesh.edges_unique
+    
+    # Create a spatial index for efficient vertex lookup
+    from rtree import index
+    
+    # Create R-tree index
+    idx = index.Index()
+    for i, v in enumerate(vertices):
+        idx.insert(i, (v[0], v[1], v[2], v[0], v[1], v[2]))
+    
+    # Check each edge
+    for edge in edges:
+        v1 = vertices[edge[0]]
+        v2 = vertices[edge[1]]
+        
+        # Get the midpoint of the edge
+        midpoint = (v1 + v2) / 2
+        
+        # Find nearby vertices
+        nearby_points = list(idx.intersection((
+            min(v1[0], v2[0]), min(v1[1], v2[1]), min(v1[2], v2[2]),
+            max(v1[0], v2[0]), max(v1[1], v2[1]), max(v1[2], v2[2])
+        )))
+        
+        # Check if any vertex lies on the edge (within a small threshold)
+        edge_vector = v2 - v1
+        edge_length = np.linalg.norm(edge_vector)
+        
+        for point_idx in nearby_points:
+            if point_idx in edge:  # Skip edge endpoints
+                continue
+                
+            point = vertices[point_idx]
+            # Calculate distance from point to edge
+            v = point - v1
+            projection = np.dot(v, edge_vector) / edge_length
+            
+            if 0 < projection < edge_length:
+                # Calculate perpendicular distance
+                dist = np.linalg.norm(v - projection * edge_vector / edge_length)
+                
+                # If point is very close to edge, it's a T-junction
+                if dist < 1e-6:  # Adjustable threshold
+                    t_junctions.append({
+                        'vertex': point_idx,
+                        'edge': edge,
+                        'position': point
+                    })
+    
+    return t_junctions
 
 def get_game_readiness_score(analysis_results):
     """Calculate overall game-readiness score based on various metrics"""
@@ -236,6 +302,23 @@ def create_3d_visualization(mesh, analysis_results):
                 marker=dict(size=3, color='yellow'),
                 name='High-density areas'
             ))
+    
+    # Add T-junction markers
+    if 't_junctions' in analysis_results['topology'] and analysis_results['topology']['t_junctions']:
+        t_junction_positions = np.array([tj['position'] for tj in analysis_results['topology']['t_junctions']])
+        
+        fig.add_trace(go.Scatter3d(
+            x=t_junction_positions[:, 0],
+            y=t_junction_positions[:, 1],
+            z=t_junction_positions[:, 2],
+            mode='markers',
+            marker=dict(
+                size=6,
+                color='blue',
+                symbol='cross'
+            ),
+            name='T-junctions'
+        ))
     
     # Update layout
     fig.update_layout(
