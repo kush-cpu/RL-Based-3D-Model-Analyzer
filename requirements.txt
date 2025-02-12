@@ -1,0 +1,6 @@
+streamlit
+trimesh
+stable-baselines3
+numpy
+open3d
+pyvista
