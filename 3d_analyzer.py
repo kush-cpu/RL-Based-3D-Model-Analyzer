@@ -8,6 +8,9 @@ from PIL import Image
 import io
 from sklearn.preprocessing import StandardScaler
 import torch.nn.functional as F
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 
 class ModelQualityPredictor(nn.Module):
     def __init__(self):
@@ -170,6 +173,84 @@ def get_game_readiness_score(analysis_results):
     
     return max(0, min(100, score))
 
+def create_3d_visualization(mesh, analysis_results):
+    """Create an interactive 3D visualization of the model with annotations"""
+    
+    # Create the 3D mesh visualization
+    vertices = mesh.vertices
+    faces = mesh.faces
+    
+    # Create the mesh3d trace
+    fig = go.Figure(data=[
+        go.Mesh3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            i=faces[:, 0],
+            j=faces[:, 1],
+            k=faces[:, 2],
+            opacity=0.8,
+            colorscale='Viridis',
+            intensity=vertices[:, 2],
+        )
+    ])
+    
+    # Add annotations for issues
+    annotations = []
+    
+    # Add markers for problematic areas
+    if not analysis_results['topology']['is_watertight']:
+        # Find non-manifold edges
+        if hasattr(mesh, 'edges_unique'):
+            problematic_edges = mesh.edges_unique
+            edge_points = mesh.vertices[problematic_edges]
+            
+            # Add markers at the midpoints of problematic edges
+            midpoints = (edge_points[:, 0] + edge_points[:, 1]) / 2
+            
+            fig.add_trace(go.Scatter3d(
+                x=midpoints[:, 0],
+                y=midpoints[:, 1],
+                z=midpoints[:, 2],
+                mode='markers',
+                marker=dict(size=5, color='red'),
+                name='Non-manifold edges'
+            ))
+    
+    # Add high-density area highlights
+    if analysis_results['topology']['density'] > 1000:
+        # Calculate face centers for high-density regions
+        face_centers = np.mean(mesh.vertices[mesh.faces], axis=1)
+        face_areas = mesh.area_faces if hasattr(mesh, 'area_faces') else np.ones(len(mesh.faces))
+        
+        # Highlight faces with high density
+        dense_faces = face_areas < np.median(face_areas) / 2
+        if np.any(dense_faces):
+            dense_centers = face_centers[dense_faces]
+            
+            fig.add_trace(go.Scatter3d(
+                x=dense_centers[:, 0],
+                y=dense_centers[:, 1],
+                z=dense_centers[:, 2],
+                mode='markers',
+                marker=dict(size=3, color='yellow'),
+                name='High-density areas'
+            ))
+    
+    # Update layout
+    fig.update_layout(
+        scene=dict(
+            aspectmode='data',
+            annotations=annotations
+        ),
+        title="Interactive 3D Model Analysis",
+        showlegend=True,
+        width=800,
+        height=600
+    )
+    
+    return fig
+
 def main():
     st.title("3D Model Analyzer for Game Development")
     st.write("Upload your 3D model to get analysis and optimization suggestions")
@@ -235,6 +316,21 @@ def main():
             )
             for suggestion in all_suggestions:
                 st.write(f"• {suggestion}")
+            
+            # 3D Visualization
+            st.subheader("3D Model Visualization")
+            fig = create_3d_visualization(mesh, analysis_results)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Add interaction instructions
+            st.info("""
+            **Interaction Instructions:**
+            - Rotate: Click and drag
+            - Zoom: Scroll or pinch
+            - Pan: Right-click and drag
+            - Reset View: Double-click
+            - Hover over markers to see issue details
+            """)
             
         except Exception as e:
             st.error(f"Error processing the model: {str(e)}")
