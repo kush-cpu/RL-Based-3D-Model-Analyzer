@@ -3,7 +3,8 @@
 A powerful tool that analyzes 3D models and provides optimization suggestions for game development using machine learning and real-time visualization.
 
 ![Project Banner](https://huggingface.co/front/assets/huggingface_logo.svg)
-[![App Dashboard](https://rl-based-3d-model-analyzer-vxtrcfxzwcha23ystnazxj.streamlit.app/)
+
+[Model Analyzer Dashboard](https://rl-based-3d-model-analyzer-vxtrcfxzwcha23ystnazxj.streamlit.app/)
 
 ## 🚀 Features
 
