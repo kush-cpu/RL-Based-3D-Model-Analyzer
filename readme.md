@@ -2,7 +2,7 @@
 
 A powerful tool that analyzes 3D models and provides optimization suggestions for game development using machine learning and real-time visualization.
 
-![Project Banner](path_to_banner_image.png)
+![Project Banner](https://huggingface.co/front/assets/huggingface_logo.svg)
 
 ## 🚀 Features
 
@@ -116,6 +116,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
+Your Name - [@ironicallykushh](https://x.com/ironicallykushh) - kushagranigam550@gmail.com
 
-Project Link: [https://github.com/yourusername/3d-model-analyzer](https://github.com/yourusername/3d-model-analyzer)
+Project Link: [https://github.com/kush-cpu/RL-Based-3D-Model-Analyzer](https://github.com/kush-cpu/RL-Based-3D-Model-Analyzer)
