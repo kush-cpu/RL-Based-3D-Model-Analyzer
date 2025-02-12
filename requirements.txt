@@ -1,6 +1,12 @@
-streamlit
-trimesh
+streamlit>=0.85.0
+trimesh>=3.9.1
 stable-baselines3
-numpy
+numpy>=1.19.2
 open3d
 pyvista
+torch>=1.7.1
+gym>=0.18.0
+rtree>=0.9.7
+plotly>=4.14.3
+scikit-learn>=0.24.2
+pillow>=8.2.0
