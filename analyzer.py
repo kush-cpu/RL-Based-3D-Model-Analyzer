@@ -220,29 +220,28 @@ def find_t_junctions(mesh):
     
     return t_junctions
 
-def get_game_readiness_score(analysis_results):
-    """Calculate overall game-readiness score based on various metrics"""
-    score = 100
+def get_game_readiness_score(analysis_results: Dict[str, Any]) -> float:
+    """Calculate game readiness score based on analysis results"""
+    score = 100.0
     
     # Topology penalties
-    if analysis_results['topology']['vertex_count'] > 10000:
-        score -= min(30, (analysis_results['topology']['vertex_count'] - 10000) / 1000)
-    
     if not analysis_results['topology']['is_watertight']:
         score -= 15
     
-    if analysis_results['topology']['part_count'] > 1:
-        score -= min(10, analysis_results['topology']['part_count'] * 2)
+    if analysis_results['topology']['vertex_count'] > 10000:
+        score -= 10
     
     # UV penalties
     if not analysis_results['uv_analysis']['has_uvs']:
-        score -= 30
-    elif analysis_results['uv_analysis']['coverage'] < 0.8:
-        score -= 20 * (1 - analysis_results['uv_analysis']['coverage'])
+        score -= 20
+    elif analysis_results['uv_analysis']['has_overlap']:
+        score -= 10
     
-    if analysis_results['uv_analysis'].get('overlapping', False):
-        score -= 15
+    # Density penalties
+    if analysis_results['topology']['density'] > 1000:
+        score -= 10
     
+    # Ensure score stays within 0-100 range
     return max(0, min(100, score))
 
 def create_3d_visualization(mesh, analysis_results):

@@ -2,6 +2,12 @@ import gym
 import numpy as np
 from gym import spaces
 import trimesh
+from analyzer import (
+    extract_model_features,
+    analyze_topology,
+    analyze_uv_maps,
+    get_game_readiness_score
+)
 
 class ModelOptimizationEnv(gym.Env):
     """Custom Environment for 3D model optimization"""
@@ -61,13 +67,10 @@ class ModelOptimizationEnv(gym.Env):
         return self._get_observation()
     
     def _get_observation(self):
-        from analyzer import extract_model_features
         features = extract_model_features(self.mesh)
         return np.array(list(features.values()))
     
     def _get_score(self):
-        from analyzer import analyze_topology, analyze_uv_maps, get_game_readiness_score
-        
         analysis = {
             'topology': analyze_topology(self.mesh),
             'uv_analysis': analyze_uv_maps(self.mesh)
@@ -75,9 +78,8 @@ class ModelOptimizationEnv(gym.Env):
         return get_game_readiness_score(analysis)
     
     def _check_termination(self):
-        # Check if mesh is still valid
         return (
-            len(self.mesh.vertices) < 100 or  # Too few vertices
-            not self.mesh.is_volume or  # Invalid volume
-            len(self.mesh.faces) < 50    # Too few faces
+            len(self.mesh.vertices) < 100 or
+            not hasattr(self.mesh, 'is_volume') or
+            len(self.mesh.faces) < 50
         )

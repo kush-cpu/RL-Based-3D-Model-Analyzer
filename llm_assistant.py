@@ -1,10 +1,15 @@
 import openai
 from typing import Dict, List, Any
+import os
+from dotenv import load_dotenv
+from analyzer import get_game_readiness_score  # Add this import
+from config import Config
 
 class ModelAssistant:
     def __init__(self):
-        self.api_key = "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"
-        openai.api_key = self.api_key
+        # Load environment variables
+        load_dotenv()
+        openai.api_key = os.getenv('OPENAI_API_KEY')
         
     def generate_response(self, 
                          question: str, 
@@ -12,22 +17,20 @@ class ModelAssistant:
                          analysis_results: Dict[str, Any],
                          chat_history: List[Dict[str, str]] = None) -> str:
         """Generate a response using OpenAI's API"""
-        
-        # Create system context
-        system_context = self._create_system_context(mesh_data, analysis_results)
-        
-        # Format chat history
-        messages = [{"role": "system", "content": system_context}]
-        
-        if chat_history:
-            for chat in chat_history[-5:]:  # Include last 5 conversations for context
-                messages.append({"role": "user", "content": chat["user"]})
-                messages.append({"role": "assistant", "content": chat["assistant"]})
-        
-        # Add current question
-        messages.append({"role": "user", "content": question})
-        
         try:
+            # Create system context
+            system_context = self._create_system_context(mesh_data, analysis_results)
+            
+            # Format messages
+            messages = [{"role": "system", "content": system_context}]
+            
+            if chat_history:
+                for chat in chat_history[-5:]:
+                    messages.append({"role": "user", "content": chat["user"]})
+                    messages.append({"role": "assistant", "content": chat["assistant"]})
+            
+            messages.append({"role": "user", "content": question})
+            
             response = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=messages,
@@ -35,6 +38,7 @@ class ModelAssistant:
                 max_tokens=500
             )
             return response.choices[0].message.content
+            
         except Exception as e:
             return f"I apologize, but I encountered an error: {str(e)}"
     
